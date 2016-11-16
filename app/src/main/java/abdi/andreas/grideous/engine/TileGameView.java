@@ -42,7 +42,7 @@ public abstract class TileGameView extends View {
 
     private void constructorDelegateGetTileSize(Context context, AttributeSet attributeSet) {
         TypedArray styledAttributes = context.obtainStyledAttributes(attributeSet, R.styleable.TileGameView);
-        tileSize = styledAttributes.getDimensionPixelSize(R.styleable.TileGameView_tileSize, 10);
+        tileSize = styledAttributes.getDimensionPixelSize(R.styleable.TileGameView_tileSize, 8);
 
         styledAttributes.recycle();
     }

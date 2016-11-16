@@ -53,7 +53,7 @@ public class Grideous extends Activity {
                     }
 
                     // Direction is same as the quadrant which was clicked
-                    grideousView.moveSnake(direction);
+                    grideousView.moveCurrentBlock(direction);
                 } else {
                     grideousView.initializeGame();
                 }
@@ -78,16 +78,16 @@ public class Grideous extends Activity {
                 if(grideousView.getCurrentMode() == Mode.PAUSED) {
                     grideousView.resumeGame();
                 }
-                grideousView.moveSnake(Direction.UP);
+                grideousView.moveCurrentBlock(Direction.UP);
                 break;
             case KeyEvent.KEYCODE_DPAD_DOWN:
-                grideousView.moveSnake(Direction.DOWN);
+                grideousView.moveCurrentBlock(Direction.DOWN);
                 break;
             case KeyEvent.KEYCODE_DPAD_LEFT:
-                grideousView.moveSnake(Direction.LEFT);
+                grideousView.moveCurrentBlock(Direction.LEFT);
                 break;
             case KeyEvent.KEYCODE_DPAD_RIGHT:
-                grideousView.moveSnake(Direction.RIGHT);
+                grideousView.moveCurrentBlock(Direction.RIGHT);
                 break;
         }
         return super.onKeyDown(keyCode, event);
