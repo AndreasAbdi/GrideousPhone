@@ -6,11 +6,11 @@ import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnTouchListener;
+import android.view.WindowManager;
 import android.widget.TextView;
 
 import abdi.andreas.grideous.engine.Direction;
 import abdi.andreas.grideous.game.GrideousView;
-
 import abdi.andreas.grideous.game.Mode;
 
 public class Grideous extends Activity {
@@ -27,10 +27,10 @@ public class Grideous extends Activity {
                 findViewById(R.id.arrowContainer),
                 findViewById(R.id.background));
         if(savedInstanceState == null) {
-            grideousView.setModeAndUpdate(Mode.READY);
-        } else {
-
+            grideousView.setMode(Mode.READY);
         }
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+
         grideousView.setOnTouchListener(new OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
@@ -54,6 +54,8 @@ public class Grideous extends Activity {
 
                     // Direction is same as the quadrant which was clicked
                     grideousView.moveCurrentBlock(direction);
+                } else if(grideousView.getCurrentMode() == Mode.PAUSED){
+                    grideousView.resumeGame();
                 } else {
                     grideousView.initializeGame();
                 }
@@ -65,20 +67,21 @@ public class Grideous extends Activity {
     @Override
     protected void onPause() {
         super.onPause();
-        grideousView.setModeAndUpdate(Mode.PAUSED);
+        grideousView.setMode(Mode.PAUSED);
     }
 
+    //this is for if no touch screen.
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         switch(keyCode) {
             case KeyEvent.KEYCODE_DPAD_UP:
                 if(grideousView.getCurrentMode() == Mode.READY || grideousView.getCurrentMode() == Mode.LOSING) {
                     grideousView.initializeGame();
-                }
-                if(grideousView.getCurrentMode() == Mode.PAUSED) {
+                } else if (grideousView.getCurrentMode() == Mode.PAUSED) {
                     grideousView.resumeGame();
+                } else {
+                    grideousView.moveCurrentBlock(Direction.UP);
                 }
-                grideousView.moveCurrentBlock(Direction.UP);
                 break;
             case KeyEvent.KEYCODE_DPAD_DOWN:
                 grideousView.moveCurrentBlock(Direction.DOWN);

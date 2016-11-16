@@ -36,7 +36,7 @@ public class GrideousView extends TileGameView {
     private Mode currentMode = Mode.READY;
     private Direction currentDirection = Direction.UP;
     private Direction nextDirection = Direction.UP;
-
+    private int shiftRubble = 0;
     private long score = 0;
     private long moveDelay = 600;
 
@@ -80,7 +80,7 @@ public class GrideousView extends TileGameView {
 
 
     public void resumeGame() {
-        setModeAndUpdate(Mode.RUNNING);
+        setMode(Mode.RUNNING);
         update();
     }
 
@@ -95,13 +95,12 @@ public class GrideousView extends TileGameView {
         this.backgroundView = backgroundView;
     }
 
-    public void setModeAndUpdate(Mode mode) {
+    public void setMode(Mode mode) {
         Mode oldMode = this.currentMode;
         this.currentMode = mode;
 
         if(mode == Mode.RUNNING && oldMode != Mode.RUNNING) {
             statusView.setVisibility(View.INVISIBLE);
-            update();
             arrowsView.setVisibility(View.VISIBLE);
             backgroundView.setVisibility(View.VISIBLE);
             return;
@@ -136,28 +135,7 @@ public class GrideousView extends TileGameView {
     }
 
     public void moveCurrentBlock(Direction direction) {
-        switch (direction) {
-            case UP:
-                if (currentDirection != Direction.DOWN) {
-                    nextDirection = Direction.UP;
-                }
-                break;
-            case RIGHT:
-                if (currentDirection != Direction.LEFT) {
-                    nextDirection = Direction.RIGHT;
-                }
-                break;
-            case DOWN:
-                if (currentDirection != Direction.UP) {
-                    nextDirection = Direction.DOWN;
-                }
-                break;
-            case LEFT:
-                if (currentDirection != Direction.RIGHT) {
-                    nextDirection = Direction.LEFT;
-                }
-                break;
-        }
+        nextDirection = direction;
     }
 
     public void update(){
@@ -181,7 +159,7 @@ public class GrideousView extends TileGameView {
         Block block = new Block();
 
         int blockType = 1 + RNG.nextInt(2);
-        //generate the generic 3 block vertical
+        //generate up to 3 block vertically/horizontally
         Point center = new Point(
                 (int) Math.floor(maxPosition.x/2),
                 (int) Math.floor(maxPosition.y/2));
@@ -197,6 +175,9 @@ public class GrideousView extends TileGameView {
                 }
             }
         }
+        if(block.parts.size() == 0) {
+            block.parts.add(center);
+        }
         return block;
     }
 
@@ -205,21 +186,96 @@ public class GrideousView extends TileGameView {
             currentBlock = generateCurrentBlock();
         }
 
-        currentDirection = nextDirection;
-        //TODO: consider making parts of the block fall in a direction if there is nothing under.
         doRubbleClearing();
+        if(shiftRubble == 0) {
+            shiftRubbleInDirection();
+            shiftRubble = 10;
+        }
+        shiftRubble--;
+
+        currentDirection = nextDirection;
         Block nextPosition = generateNextCurrentBlockPosition();
         if(blockCollidesWithWall(nextPosition)||blockCollidesWithRubble(nextPosition)) {
             setCurrentBlockToRubble();
             Block newCurrentBlock = generateCurrentBlock();
             if(newCurrentBlock == null) {
-                setModeAndUpdate(Mode.LOSING);
+                setMode(Mode.LOSING);
             } else {
                 this.currentBlock = newCurrentBlock;
             }
         } else {
             currentBlock = nextPosition;
         }
+    }
+
+    private void shiftRubbleInDirection() {
+        int xShift = 0;
+        int yShift = 0;
+        switch(currentDirection) {
+            case RIGHT:
+                xShift = 1;
+                for(int x = xTileCount -1; x >= 0; x--) {
+                    for(int y = 0; y < yTileCount; y++) {
+                        shiftSingleRubble(
+                                new Point(xShift, yShift),
+                                new Point(x,y)
+                        );
+                    }
+                }
+                break;
+            case LEFT:
+                xShift = -1;
+                for(int x = 0; x < xTileCount; x++) {
+                    for(int y = 0; y < yTileCount; y++) {
+                        shiftSingleRubble(
+                                new Point(xShift, yShift),
+                                new Point(x,y)
+                        );
+                    }
+                }
+                break;
+            case UP:
+                yShift = -1;
+                for(int y = 0; y < yTileCount; y++) {
+                    for(int x = 0; x < xTileCount; x++) {
+                        shiftSingleRubble(
+                                new Point(xShift, yShift),
+                                new Point(x,y)
+                        );
+                    }
+                }
+                break;
+            case DOWN:
+                yShift = 1;
+                for(int y = yTileCount -1; y >= 0; y--) {
+                    for(int x = 0; x < xTileCount; x++) {
+                        shiftSingleRubble(
+                                new Point(xShift, yShift),
+                                new Point(x,y)
+                        );
+                    }
+                }
+                break;
+
+        }
+    }
+
+    private void shiftSingleRubble(Point shift, Point point) {
+        //check the position below each rock to see if it is valid.
+        if(!rubble[point.x][point.y]) {
+            return;
+        }
+
+        int newX = point.x + shift.x;
+        int newY = point.y + shift.y;
+        Point newPoint = new Point(newX, newY);
+        if(pointCollidesWithWall(newPoint) || rubble[newX][newY]) {
+            return;
+        }
+
+        rubble[point.x][point.y] = false;
+        rubble[newX][newY] = true;
+
     }
 
     private Block generateCurrentBlock() {
@@ -243,16 +299,16 @@ public class GrideousView extends TileGameView {
     }
 
     private void doRowRubbleClearing() {
-        for(int y = 0; y < yTileCount; y++) {
+        for(int y = 1; y < yTileCount-1; y++) {
             boolean rowFilled = true;
-            for(int x = 0; x < xTileCount; x++) {
+            for(int x = 1; x < xTileCount-1; x++) {
                 if(!rubble[x][y]) {
                     rowFilled = false;
                     break;
                 }
             }
             if(rowFilled) {
-                for(int x = 0; x < xTileCount; x++) {
+                for(int x = 1; x < xTileCount-1; x++) {
                     rubble[x][y] = false;
                 }
                 handleScoreUp();
@@ -261,14 +317,14 @@ public class GrideousView extends TileGameView {
     }
 
     private void doColumnRubbleClearing() {
-        for(int x = 0; x < yTileCount; x++) {
+        for(int x = 1; x < yTileCount-1; x++) {
             boolean columnFilled = true;
-            for(int y = 0; y < xTileCount; y++) {
+            for(int y = 1; y < xTileCount-1; y++) {
                 columnFilled = false;
                 break;
             }
             if(columnFilled) {
-                for(int y = 0; y < yTileCount; y++) {
+                for(int y = 1; y < yTileCount-1; y++) {
                     rubble[x][y] = false;
                 }
                 handleScoreUp();
